@@ -11,8 +11,9 @@ It watches your subagents and draws a pane. That's it. If you run `claude plugin
 | `$.store.get` / `$.store.set` | Saves your custom mascot looks. That's the only thing written to disk. |
 | `$.ui.open` / `$.ui.close` / `$.ui.resolve` | Opens, closes and draws its own pane. |
 | `$.clock.now` / `$.clock.after` / `$.clock.every` | The 250 ms update batching and the 1 s timer. |
+| `$.agent.list` | Reads the list of agents already running when the pane opens, so they show up too. Read-only. |
 
-It has **no** network, file, process, model, tool or MCP access, no dependencies and no install scripts.
+It can't start, stop or change agents, and has **no** network, file, process, model, tool or MCP access, no dependencies and no install scripts.
 
 ## What it reads, and what it does with it
 

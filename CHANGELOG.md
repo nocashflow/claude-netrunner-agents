@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.1] - 2026-11-16
 
 ### Added
 
@@ -12,6 +12,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Fixed
 
+- `/netrunner` now works in a chat that was already open when the mod got installed or reloaded. Those chats never see a session start, so the command wasn't registered and `/netrunner` went to Claude as a normal message. Now the first turn registers it, and a `/netrunner` that still arrives as plain text (for example, typed while Claude is busy) is answered by the mod instead of being sent to Claude.
+- The pane now shows agents that were already running when it opened, using Claude Code's read-only list of agents. Their tool and tokens fill in from their next step.
 - The install command in the launch film's last scene was cut off. Its box is wider now.
 
 ## [1.0.0] - 2026-11-16
@@ -26,4 +28,5 @@ All notable changes to this project are documented here. The format follows [Kee
 - Secret masking for everything the pane shows.
 - `scripts/audit.mjs` (contrast, SVG safety, secret masking, code reach, efficiency) and `scripts/build-assets.mjs` (the README film and pictures), both run in CI.
 
+[1.0.1]: https://github.com/nocashflow/claude-netrunner-agents/releases/tag/v1.0.1
 [1.0.0]: https://github.com/nocashflow/claude-netrunner-agents/releases/tag/v1.0.0

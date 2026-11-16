@@ -47,6 +47,7 @@ const now = atom({ plugin: 'netrunner-agents', key: 'now' } as const, 0)
 const expanded = atom({ plugin: 'netrunner-agents', key: 'expanded' } as const, {})
 
 let isPaneOpen = false
+let isReady = false
 let ticker: Timer | undefined
 
 // ---------------------------------------------------------------- batching updates
@@ -200,7 +201,42 @@ function cleanLooks(value: unknown): Record<string, Look> {
 async function openPane($: Engine) {
   await update($, isClosed, () => false)
   isPaneOpen = true
+  await catchUp($).catch(() => undefined)
   await $.ui.open({ id: PANE, title: TITLE, backgroundColor: BG })
+}
+
+// Agents that started before the mod loaded in this chat (say it was installed or reloaded mid-job)
+// never raised an agent.spawn here. Claude Code's own read-only list still knows them, so add any
+// that are missing. Their tokens and tool show up from their next step on.
+async function catchUp($: Engine) {
+  // A nice-to-have: if it fails, the pane and /netrunner carry on without it.
+  const known = await $.agent.list().catch(() => [])
+  if (known.length === 0) return
+  const now = await $.clock.now()
+  await update($, agents, list => {
+    const have = new Set((list ?? []).map(a => a.id))
+    const extra: AgentCard[] = known
+      .filter(k => !have.has(k.id))
+      .slice(-STORE_FINISHED)
+      .map(k => {
+        const phase = k.status === 'completed' || k.status === 'idle' ? 'done' : k.status === 'failed' || k.status === 'killed' ? 'failed' : 'running'
+        return {
+          id: k.id,
+          type: clip(k.type, 64),
+          task: clip(redact(k.description ?? ''), MAX_LINE),
+          model: '',
+          phase,
+          tool: phase === 'running' ? 'already running…' : phase === 'failed' ? 'flatlined' : 'done',
+          tokens: 0,
+          startedAt: now,
+          endedAt: phase === 'running' ? 0 : now,
+          recent: [],
+          result: '',
+        }
+      })
+    return extra.length ? [...extra, ...(list ?? [])] : (list ?? [])
+  })
+  if (known.some(k => k.status === 'running' || k.status === 'pending' || k.status === 'waiting')) startTicker($)
 }
 
 const list = (o: object) => Object.keys(o).join(', ')
@@ -217,62 +253,61 @@ const HELP = [
   'e.g. /netrunner style Explore node acid visor',
 ].join('\n')
 
-// ---------------------------------------------------------------- hooks
-
-export const register: Register = on => {
-  on('session.start', async ($, e, next) => {
-    await $.command.register({
-      name: 'netrunner',
-      description: 'Your subagents as pixel mascots: what they are doing, for how long, and their tokens',
-      argumentHint: '[close | clear | looks | style <type> [mascot] [color] [cosmetic] | reset <type>]',
-    })
-    const saved = cleanLooks(await $.store.get('looks'))
-    await update($, looks, () => saved)
-
-    return next(e)
+// Registering /netrunner and loading your saved looks. Normally that happens at session start,
+// but a chat that was already open when the mod got installed (or reloaded with /reload-plugins)
+// never sees a session start, so the first turn or the first "/netrunner" typed does it instead.
+async function ready($: Engine) {
+  if (isReady) return
+  isReady = true
+  await $.command.register({
+    name: 'netrunner',
+    description: 'Your subagents as pixel mascots: what they are doing, for how long, and their tokens',
+    argumentHint: '[close | clear | looks | style <type> [mascot] [color] [cosmetic] | reset <type>]',
   })
+  const saved = cleanLooks(await $.store.get('looks'))
+  await update($, looks, () => saved)
+  await catchUp($).catch(() => undefined)
+}
 
-  on('command.run', { command: 'netrunner' }, async ($, e) => {
-    const [verb = '', ...rest] = e.args.trim().split(/\s+/).filter(Boolean)
+async function runCommand($: Engine, args: string): Promise<string> {
+    const [verb = '', ...rest] = args.trim().split(/\s+/).filter(Boolean)
 
     switch (verb.toLowerCase()) {
       case '':
       case 'open':
         await openPane($)
-        return { text: 'Agents pane is up. Your crew shows here when Claude jacks any in.' }
+        return 'Agents pane is up. Your crew shows here when Claude jacks any in.'
       case 'close':
         await update($, isClosed, () => true)
         isPaneOpen = false
         await $.ui.close({ id: PANE })
-        return { text: 'Pane closed. /netrunner brings it back.' }
+        return 'Pane closed. /netrunner brings it back.'
       case 'clear':
         await update($, agents, all => (all ?? []).filter(a => a.phase === 'running'))
         await update($, expanded, () => ({}))
-        return { text: 'Finished agents cleared out.' }
+        return 'Finished agents cleared out.'
       case 'looks': {
         const custom = (await read($, looks)) ?? {}
         const types = [...new Set([...Object.keys(DEFAULT_LOOKS), ...Object.keys(custom)])]
-        return {
-          text: [
-            `Mascots:   ${list(MASCOTS)}`,
-            `Colors:    ${list(COLORS)}`,
-            `Cosmetics: ${list(COSMETICS)}`,
-            '',
-            ...types.map(t => {
-              const l = lookFor(t, custom)
-              return `  ${t}: ${l.mascot}, ${l.color}, ${l.cosmetic}${Object.hasOwn(custom, t) ? ' (yours)' : ''}`
-            }),
-            '  anything else: picked from its name, and always the same one',
-          ].join('\n'),
-        }
+        return [
+          `Mascots:   ${list(MASCOTS)}`,
+          `Colors:    ${list(COLORS)}`,
+          `Cosmetics: ${list(COSMETICS)}`,
+          '',
+          ...types.map(t => {
+            const l = lookFor(t, custom)
+            return `  ${t}: ${l.mascot}, ${l.color}, ${l.cosmetic}${Object.hasOwn(custom, t) ? ' (yours)' : ''}`
+          }),
+          '  anything else: picked from its name, and always the same one',
+        ].join('\n')
       }
       case 'style': {
         const [type, ...picks] = rest
-        if (!type || picks.length === 0) return { text: HELP }
-        if (!okType(type)) return { text: `"${clip(type, 40)}" isn't an agent type name I can style.` }
+        if (!type || picks.length === 0) return HELP
+        if (!okType(type)) return `"${clip(type, 40)}" isn't an agent type name I can style.`
         const custom = (await read($, looks)) ?? {}
         if (!Object.hasOwn(custom, type) && Object.keys(custom).length >= MAX_LOOKS) {
-          return { text: `That's ${MAX_LOOKS} custom looks already. /netrunner reset one first.` }
+          return `That's ${MAX_LOOKS} custom looks already. /netrunner reset one first.`
         }
         const look = { ...lookFor(type, custom) }
         for (const raw of picks) {
@@ -280,27 +315,51 @@ export const register: Register = on => {
           if (Object.hasOwn(MASCOTS, pick)) look.mascot = pick
           else if (Object.hasOwn(COLORS, pick)) look.color = pick
           else if (Object.hasOwn(COSMETICS, pick)) look.cosmetic = pick
-          else return { text: `Don't know "${clip(raw, 40)}". /netrunner looks lists every mascot, color and cosmetic.` }
+          else return `Don't know "${clip(raw, 40)}". /netrunner looks lists every mascot, color and cosmetic.`
         }
         const next = await update($, looks, all => ({ ...(all ?? {}), [type]: look }))
         await $.store.set('looks', next)
-        return { text: `${type} is now ${look.mascot}, ${look.color}, ${look.cosmetic}. Preem.` }
+        return `${type} is now ${look.mascot}, ${look.color}, ${look.cosmetic}. Preem.`
       }
       case 'reset': {
         const [type] = rest
-        if (!type) return { text: HELP }
+        if (!type) return HELP
         const next = await update($, looks, all => {
           const copy = { ...(all ?? {}) }
           delete copy[type]
           return copy
         })
         await $.store.set('looks', next)
-        return { text: `${clip(type, 64)} is back to its default look.` }
+        return `${clip(type, 64)} is back to its default look.`
       }
       default:
-        return { text: HELP }
+        return HELP
     }
-  }).catch(() => ({ text: 'netrunner-agents glitched on that one. Nothing changed.' }))
+}
+
+// ---------------------------------------------------------------- hooks
+
+export const register: Register = on => {
+  on('session.start', async ($, e, next) => {
+    isReady = false
+    await ready($)
+
+    return next(e)
+  })
+
+  on('command.run', { command: 'netrunner' }, async ($, e) => ({ text: await runCommand($, e.args) })).catch(() => ({
+    text: 'netrunner-agents glitched on that one. Nothing changed.',
+  }))
+
+  // "/netrunner" typed before the command was registered arrives as a plain prompt. Answer it here
+  // instead of sending it to Claude, and register the command for next time.
+  on('prompt.submit', async ($, e, next) => {
+    const match = !e.command && e.origin?.kind === 'composer' ? e.text.trim().match(/^\/netrunner(?:\s+([\s\S]*))?$/) : null
+    if (!match) return next(e)
+    await ready($)
+
+    return { drop: await runCommand($, match[1] ?? '') }
+  }).catch(($, e, next) => next(e))
 
   // A subagent starts: a new card, and the pane opens unless you closed it.
   on('agent.spawn', async ($, e, next) => {
@@ -332,8 +391,10 @@ export const register: Register = on => {
     return started
   }).catch(($, e, next) => next(e))
 
-  // A teammate or resumed agent starting another turn is running again.
-  on('turn.start', ($, e, next) => {
+  // A teammate or resumed agent starting another turn is running again. And the first main-loop
+  // turn in a chat that skipped session start gets /netrunner registered.
+  on('turn.start', async ($, e, next) => {
+    if (!e.agentId && !isReady) await ready($)
     if (e.agentId) {
       enqueue($, patch(e.agentId, { phase: 'running', endedAt: 0 }))
       startTicker($)

@@ -128,7 +128,7 @@ check(clip('x'.repeat(500), 160).length === 160, 'long text is cut short')
 console.log('Mod code')
 const hooks = new URL('../plugins/netrunner-agents/hooks/', import.meta.url)
 const risky =
-  /fetch\(|XMLHttpRequest|WebSocket|EventSource|\$\.(fs|process|model|agent|tool|http|mcp|session)\b|\beval\(|new Function|\bimport\(|\brequire\(|https?:\/\/(?!www\.w3\.org\/2000\/svg)|postMessage|setTimeout|setInterval|globalThis|<Markdown|<Link|<Client|dangerously/
+  /fetch\(|XMLHttpRequest|WebSocket|EventSource|\$\.(fs|process|model|tool|http|mcp|session)\b|\$\.agent\.(?!list\b)|\beval\(|new Function|\bimport\(|\brequire\(|https?:\/\/(?!www\.w3\.org\/2000\/svg)|postMessage|setTimeout|setInterval|globalThis|<Markdown|<Link|<Client|dangerously/
 for (const file of readdirSync(hooks)) {
   if (!/\.(ts|tsx|js)$/.test(file) || file.endsWith('.d.ts')) continue
   const source = readFileSync(new URL(file, hooks), 'utf8')

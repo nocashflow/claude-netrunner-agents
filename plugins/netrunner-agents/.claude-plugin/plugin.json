@@ -1,6 +1,6 @@
 {
   "name": "netrunner-agents",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A compact cyberpunk pane that shows every subagent Claude Code starts as a pixel mascot: what it's doing, for how long, and its exact tokens.",
   "author": { "name": "nocashflow", "url": "https://github.com/nocashflow" },
   "homepage": "https://nocashflow.github.io/claude-netrunner-agents/",

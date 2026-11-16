@@ -10,7 +10,7 @@ I kept spinning up subagents and then just… staring at a spinner, wondering wh
 
 **[Try the live demo →](https://nocashflow.github.io/claude-netrunner-agents/)**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-ff2a6d?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.1-ff2a6d?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-00f0ff?style=flat-square)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-mod-d97757?style=flat-square)](https://code.claude.com/docs/en/plugins/mods/overview)
 [![Mascots](https://img.shields.io/badge/mascots-8-f3e600?style=flat-square)](#meet-the-crew)
@@ -173,7 +173,8 @@ Short version: it **watches** your agents and **draws** a pane. It never touches
   - registering `/netrunner`;
   - reading and writing its own session state and saved looks;
   - opening and closing its own pane;
-  - its own timers.
+  - its own timers;
+  - reading (never changing) the list of agents, so ones already running when the pane opens show up too.
 
   No network, file, process, model, tool or MCP access. Zero dependencies.
 

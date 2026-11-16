@@ -1,6 +1,6 @@
 {
   "name": "claude-netrunner-agents",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Dev scripts for the netrunner-agents Claude Code mod. The mod itself has zero dependencies.",
   "type": "module",

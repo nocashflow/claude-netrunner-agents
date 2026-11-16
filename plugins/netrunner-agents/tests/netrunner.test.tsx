@@ -101,3 +101,39 @@ test('a token in a command never reaches the pane', async ($, on) => {
     await ui.unmount()
   }
 })
+
+test('"/netrunner" typed before the command exists is answered, not sent to Claude', async ($, on) => {
+  mock.store(on)
+  on('command.register', () => ({ value: { command: 'netrunner' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('agent.list', () => ({ value: [] }))
+  on('prompt.submit', (_, e) => ({ text: e.text }))
+
+  const typed = await $.prompt.submit({ text: '/netrunner', wait: false, origin: { kind: 'composer' } })
+  expect(typed.drop).toContain('Agents pane is up')
+
+  const other = await $.prompt.submit({ text: 'refactor the netrunner module', wait: false, origin: { kind: 'composer' } })
+  expect(other.drop).toBeUndefined()
+  expect(other.text).toBe('refactor the netrunner module')
+})
+
+test('agents already running when the pane opens show up too', async ($, on) => {
+  mock.clock(on)
+  mock.store(on)
+  on('command.register', () => ({ value: { command: 'netrunner' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('agent.list', () => ({
+    value: [
+      { id: 'x1', type: 'general-purpose', description: 'Port the foundation', status: 'running' },
+      { id: 'x2', type: 'Explore', description: 'Map the routes', status: 'completed' },
+    ],
+  }))
+  on('prompt.submit', (_, e) => ({ text: e.text }))
+
+  await $.prompt.submit({ text: '/netrunner', wait: false, origin: { kind: 'composer' } })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /1 LIVE/ })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /Port the foundation/ })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /FINISHED · 1/ })).toBeTruthy()
+  await ui.unmount()
+})
