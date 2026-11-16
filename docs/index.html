@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>See what your Claude Code subagents are doing: netrunner-agents</title>
+<meta name="description" content="A free, open-source Claude Code plugin that shows every subagent as a pixel mascot in a small pane: the tool it's running, exact token usage, a live timer and its final report. No network access, no tracking.">
+<link rel="canonical" href="https://nocashflow.github.io/claude-netrunner-agents/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="netrunner-agents for Claude Code">
+<meta property="og:url" content="https://nocashflow.github.io/claude-netrunner-agents/">
+<meta property="og:title" content="netrunner-agents: your Claude Code subagents as a pixel crew">
+<meta property="og:description" content="See what every Claude Code subagent is doing, for how long, and exactly how many tokens it's using. Free and open source.">
+<meta property="og:image" content="https://nocashflow.github.io/claude-netrunner-agents/share.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="netrunner-agents: eight pixel mascots, one for each kind of Claude Code subagent">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="netrunner-agents: your Claude Code subagents as a pixel crew">
+<meta name="twitter:description" content="See what every Claude Code subagent is doing, for how long, and exactly how many tokens it's using.">
+<meta name="twitter:image" content="https://nocashflow.github.io/claude-netrunner-agents/share.png">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#0b0b12">
+<meta name="color-scheme" content="dark">
+<link rel="stylesheet" href="site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "netrunner-agents",
+      "alternateName": "netrunner-agents for Claude Code",
+      "description": "A Claude Code plugin that shows every subagent as a pixel mascot in a compact pane, with its current tool, exact token usage, a live timer, recent activity and final report.",
+      "applicationCategory": "DeveloperApplication",
+      "applicationSubCategory": "Claude Code plugin",
+      "operatingSystem": "Windows, macOS, Linux",
+      "softwareVersion": "1.0.0",
+      "license": "https://opensource.org/licenses/MIT",
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "url": "https://nocashflow.github.io/claude-netrunner-agents/",
+      "downloadUrl": "https://github.com/nocashflow/claude-netrunner-agents",
+      "codeRepository": "https://github.com/nocashflow/claude-netrunner-agents",
+      "image": "https://nocashflow.github.io/claude-netrunner-agents/share.png",
+      "author": { "@type": "Person", "name": "nocashflow", "url": "https://github.com/nocashflow" }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "How can I see what my Claude Code subagents are doing?", "acceptedAnswer": { "@type": "Answer", "text": "Install netrunner-agents. Every subagent Claude Code starts then shows up in an Agents pane with the tool it is running right now, its token usage and a timer. Click activity under an agent to see its last tool calls and, once it is done, its final report." } },
+        { "@type": "Question", "name": "How do I see token usage per subagent in Claude Code?", "acceptedAnswer": { "@type": "Answer", "text": "netrunner-agents shows each subagent's tokens live: the size of its latest request (input, cache and output) as the API reported it. It is the same number Claude Code prints when an agent finishes." } },
+        { "@type": "Question", "name": "How do I install netrunner-agents?", "acceptedAnswer": { "@type": "Answer", "text": "In the Claude Code desktop app, click + next to the message box, then Plugins, Add marketplace, enter nocashflow/claude-netrunner-agents, then add netrunner-agents. In a terminal session, run /plugin install netrunner-agents --marketplace nocashflow/claude-netrunner-agents." } },
+        { "@type": "Question", "name": "Does it slow Claude Code down?", "acceptedAnswer": { "@type": "Answer", "text": "It is built to be light: the mascots are still images, updates are batched so the pane redraws about four times a second at most and only while agents work, and the timer only ticks while an agent runs and the pane is open. With no agents running it does nothing." } },
+        { "@type": "Question", "name": "Is it safe? Does it send my code anywhere?", "acceptedAnswer": { "@type": "Answer", "text": "It has no network, file, process, model or tool access and no dependencies. What it shows stays in the session's memory, and secrets such as API keys, tokens and passwords are masked before anything is stored. It only observes agents and never changes or blocks them." } },
+        { "@type": "Question", "name": "Does it work in the terminal or VS Code?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The pane and the /netrunner command work there too, but since those can't draw pictures in a pane, each mascot shows as a coloured block. The desktop app shows the full pixel mascots." } },
+        { "@type": "Question", "name": "Can I change how the agents look?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Any agent type can wear any of 8 mascots, 7 colours and 9 cosmetics, for example /netrunner style Explore node acid visor. Your picks are saved and work in every chat." } }
+      ]
+    }
+  ]
+}
+</script>
+<script type="module" src="site.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar">
+  <nav class="bar__in" aria-label="Main">
+    <a class="bar__brand" href="#top"><img src="icon.png" width="24" height="24" alt="">netrunner-agents</a>
+    <ul class="bar__links">
+      <li><a href="#demo">Demo</a></li>
+      <li><a href="#crew">Crew</a></li>
+      <li><a href="#style">Style</a></li>
+      <li><a href="#trust">Security</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="https://github.com/nocashflow/claude-netrunner-agents">GitHub</a></li>
+    </ul>
+    <a class="pill pill--small" href="#install">Install</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero" id="top" aria-labelledby="hero-h">
+    <p class="eyebrow">A Claude Code plugin</p>
+    <h1 id="hero-h" class="hero__line">Your subagents, <br>as a crew.</h1>
+    <p class="hero__sub">See what every Claude Code subagent is doing, for how long, and exactly how many tokens it's burning. Each one gets a tiny pixel mascot. Free and open source.</p>
+    <div class="cmd" data-copy-box>
+      <code class="cmd__text">/plugin install netrunner-agents <span class="nb">--marketplace</span> <span class="nb">nocashflow/claude-netrunner-agents</span></code>
+      <button class="cmd__copy" type="button" data-copy>Copy</button>
+    </div>
+    <p class="hero__hint">Desktop app: <b>+</b> → <b>Plugins</b> → <b>Add marketplace</b> → <code>nocashflow/claude-netrunner-agents</code></p>
+  </section>
+
+  <section class="demo" id="demo" aria-labelledby="demo-h">
+    <h2 id="demo-h" class="visually-hidden">Live demo</h2>
+    <div class="win">
+      <div class="win__bar"><span class="win__dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win__title">Claude Code</span><span class="win__tag">demo · pretend agents</span></div>
+      <div class="win__body">
+        <div class="chat" aria-label="Example conversation">
+          <p class="chat__me">Checkout feels slow and I want the auth middleware audited before Friday. Can you dig in?</p>
+          <div class="chat__claude">
+            <span class="chat__dot" aria-hidden="true"></span>
+            <div>
+              <p>On it, choom. Sending three agents in:</p>
+              <ul>
+                <li>one maps the checkout flow</li>
+                <li>one audits the auth middleware</li>
+                <li>one profiles the slow queries</li>
+              </ul>
+              <p class="chat__meta">Agent ×3</p>
+            </div>
+          </div>
+          <p class="chat__input">Reply to Claude…</p>
+        </div>
+        <div class="pane" data-pane aria-label="The Agents pane, showing pretend agents working">
+          <img class="pane__still" src="pane.svg" alt="The Agents pane mid-job: two live agents with their tool, tokens and timer, then three finished agents, one flatlined." data-still>
+        </div>
+      </div>
+    </div>
+    <div class="demo__controls">
+      <button class="chip" type="button" data-demo-toggle aria-pressed="false">Pause demo</button>
+      <button class="chip" type="button" data-demo-restart>Restart</button>
+    </div>
+  </section>
+
+  <section class="say" aria-labelledby="say-h">
+    <h2 id="say-h" class="say__big">No more staring at a spinner. <span>Know what every agent is up to.</span></h2>
+  </section>
+
+  <section class="feat" aria-labelledby="feat-h">
+    <h2 id="feat-h" class="sec-h">Everything in one small pane.</h2>
+    <p class="sec-sub">It docks beside the chat and stays out of the way.</p>
+    <ul class="bento">
+      <li class="bento__big"><h3>What it's doing, live</h3><p>Each agent's tile shows the tool it's running right now: <code>Grep useSession</code>, <code>Read cart.ts</code>, <code>Bash npm test</code>. You know who's stuck and who's cooking.</p></li>
+      <li><h3>Exact tokens</h3><p>A token bar per agent, straight from the API. Same number Claude Code prints when an agent finishes.</p></li>
+      <li><h3>Live timers</h3><p>How long each one has been at it, counting up like the Background tasks panel.</p></li>
+      <li><h3>▸ activity</h3><p>One click shows an agent's last 8 tool calls, and later the start of its final report.</p></li>
+      <li><h3>Done or flatlined</h3><p>Finished agents fold into slim rows. Crashed ones glitch out in red, with the word <em>flatlined</em>, never colour alone.</p></li>
+      <li class="bento__wide"><h3>Tiny when you want it</h3><p>Minimize the pane and it becomes a one-line widget: the live crew and the total. Older finished agents fold into a strip of icons, so it never grows forever.</p></li>
+    </ul>
+  </section>
+
+  <section class="film" aria-labelledby="film-h">
+    <h2 id="film-h" class="sec-h">The 42-second tour.</h2>
+    <img src="launch.svg" width="1600" height="900" loading="lazy" alt="Launch film: eight pixel mascots appear, Claude sends three subagents into a task, the pane updates live, one agent's activity opens, finished and flatlined agents fold into rows, an agent gets restyled, and the whole crew lines up with the install command.">
+  </section>
+
+  <section class="crew" id="crew" aria-labelledby="crew-h">
+    <h2 id="crew-h" class="sec-h">Meet the crew.</h2>
+    <p class="sec-sub">Eight mascots, all drawn from scratch. Each one turns up for certain agent types.</p>
+    <ul class="crew__grid">
+      <li><img src="mascots/daemon.svg" width="400" height="370" loading="lazy" alt="Daemon, a magenta horned imp with a mohawk and a devil tail, running, done and flatlined."><h3>Daemon</h3><p class="crew__role"><code>general-purpose</code></p><p>A tiny horned imp. Background processes are literally called daemons.</p></li>
+      <li><img src="mascots/ping.svg" width="400" height="370" loading="lazy" alt="Ping, a violet pixel bat in a cyan visor, running, done and flatlined."><h3>Ping</h3><p class="crew__role"><code>Explore</code></p><p>A pixel bat. Sends out a ping and listens for what comes back.</p></li>
+      <li><img src="mascots/node.svg" width="400" height="370" loading="lazy" alt="Node, an orange data-squid with cable tentacles, running, done and flatlined."><h3>Node</h3><p class="crew__role"><code>Plan</code></p><p>A data-squid whose tentacles are network cables. Wired into everything.</p></li>
+      <li><img src="mascots/fork.svg" width="400" height="370" loading="lazy" alt="Fork, a cyan slime splitting in two, running, done and flatlined."><h3>Fork</h3><p class="crew__role"><code>fork</code></p><p>A slime halfway through splitting in two, like a forked process.</p></li>
+      <li><img src="mascots/sentry.svg" width="400" height="370" loading="lazy" alt="Sentry, a chrome drone with one cyan lens, running, done and flatlined."><h3>Sentry</h3><p class="crew__role">reviewers, audits</p><p>A hovering drone with one big lens. Keeps watch over reviews.</p></li>
+      <li><img src="mascots/byte.svg" width="400" height="370" loading="lazy" alt="Byte, a cyan walking CRT terminal, running, done and flatlined."><h3>Byte</h3><p class="crew__role">tests, builds, lint</p><p>A walking CRT terminal. Its face is the screen.</p></li>
+      <li><img src="mascots/proc.svg" width="400" height="370" loading="lazy" alt="Proc, a yellow blocky cat with whiskers, running, done and flatlined."><h3>Proc</h3><p class="crew__role">everyone else</p><p>A blocky street cat. Quick, curious, always poking at files.</p></li>
+      <li><img src="mascots/shell.svg" width="400" height="370" loading="lazy" alt="Shell, a green pixel turtle, running, done and flatlined."><h3>Shell</h3><p class="crew__role">everyone else</p><p>A turtle named after the command line. Slow, steady, never lost.</p></li>
+    </ul>
+  </section>
+
+  <section class="style" id="style" aria-labelledby="style-h">
+    <h2 id="style-h" class="sec-h">Dress up your crew.</h2>
+    <p class="sec-sub">Any agent type, any mascot, 7 colours, 9 bits of chrome. Try it here, then paste the command.</p>
+    <div class="styler" data-styler>
+      <div class="styler__show">
+        <img class="styler__big" data-style-big src="mascots/ping.svg" width="320" height="240" alt="">
+        <p class="styler__name" data-style-name aria-live="polite">Explore · ping · violet · visor</p>
+        <div class="styler__states" aria-hidden="true">
+          <figure><img data-style-state="running" alt=""><figcaption>running</figcaption></figure>
+          <figure><img data-style-state="done" alt=""><figcaption>done</figcaption></figure>
+          <figure><img data-style-state="failed" alt=""><figcaption>flatlined</figcaption></figure>
+        </div>
+      </div>
+      <div class="styler__pick">
+        <label class="styler__label" for="style-type">Agent type</label>
+        <select id="style-type" data-style-type>
+          <option>Explore</option>
+          <option>general-purpose</option>
+          <option>Plan</option>
+          <option>fork</option>
+          <option>code-reviewer</option>
+          <option>test-runner</option>
+        </select>
+        <fieldset><legend class="styler__label">Mascot</legend><div class="chips" data-style-group="mascot"></div></fieldset>
+        <fieldset><legend class="styler__label">Colour</legend><div class="chips" data-style-group="color"></div></fieldset>
+        <fieldset><legend class="styler__label">Cosmetic</legend><div class="chips" data-style-group="cosmetic"></div></fieldset>
+        <div class="cmd cmd--small" data-copy-box>
+          <code class="cmd__text" data-style-cmd>/netrunner style Explore ping violet visor</code>
+          <button class="cmd__copy" type="button" data-copy>Copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="perf" aria-labelledby="perf-h">
+    <h2 id="perf-h" class="sec-h">Light on your machine.</h2>
+    <p class="sec-sub">A fun little pane shouldn't be what spins your fans up.</p>
+    <ul class="stats">
+      <li><b>≤4</b><span>redraws a second, max, and only while agents work</span></li>
+      <li><b>0</b><span>animations: the mascots are still pictures</span></li>
+      <li><b>1s</b><span>timer, only while an agent runs and the pane is open</span></li>
+      <li><b>0</b><span>polling, network calls or dependencies</span></li>
+    </ul>
+  </section>
+
+  <section class="trust" id="trust" aria-labelledby="trust-h">
+    <div class="trust__words">
+      <h2 id="trust-h" class="sec-h">It watches. <span>It never touches.</span></h2>
+      <p>Every hook just observes and passes things straight through, so it can't block or change an agent, a tool call or a prompt. No network, files, processes, models or tools. What it shows stays in the session's memory, and secrets like API keys, tokens and passwords are masked to <code>•••</code> before they're even stored.</p>
+      <p class="trust__note">Text is WCAG AA or better everywhere. Every mascot has a description for screen readers. No corpo spyware, no shady daemons. Just cute ones.</p>
+      <a class="more" href="https://github.com/nocashflow/claude-netrunner-agents/blob/main/SECURITY.md">Read the security policy <span aria-hidden="true">›</span></a>
+    </div>
+    <pre class="term" aria-label="Output of claude plugin validate"><code><span class="t-dim">$</span> claude plugin validate plugins/netrunner-agents
+<span class="t-dim">  hooks:</span> session.start, command.run{netrunner},
+         agent.spawn, turn.start, tool.call,
+         turn.step, turn.complete, ui.close,
+         ui.render{Pane}
+<span class="t-dim">  calls:</span> $.clock.*, $.command.register,
+         $.state.*, $.store.*, $.ui.open,
+         $.ui.close, $.ui.resolve
+<span class="t-ok">✔ Validation passed</span></code></pre>
+  </section>
+
+  <section class="install" id="install" aria-labelledby="install-h">
+    <h2 id="install-h" class="sec-h">Jack it in.</h2>
+    <p class="sec-sub">Quicker than a ripperdoc, and nobody touches your spine.</p>
+    <ol class="steps">
+      <li><strong>Desktop app:</strong> click <b>+</b> next to the message box, then <b>Plugins</b> → <b>Add marketplace</b>, enter <code>nocashflow/claude-netrunner-agents</code>, then <b>Add plugin</b> → <b>netrunner-agents</b>.</li>
+      <li><strong>Terminal:</strong> run the line below, say <code>y</code> to the marketplace and pick the <b>user</b> scope so it works everywhere.</li>
+      <li><strong>Send your crew in.</strong> The pane opens the first time Claude starts an agent, or any time with <code>/netrunner</code>.</li>
+    </ol>
+    <div class="cmd cmd--big" data-copy-box>
+      <code class="cmd__text">/plugin install netrunner-agents <span class="nb">--marketplace</span> <span class="nb">nocashflow/claude-netrunner-agents</span></code>
+      <button class="cmd__copy" type="button" data-copy>Copy</button>
+    </div>
+    <p class="install__note">Needs Claude Code v2.1.325 or later. Best in the desktop app; in the terminal and VS Code the mascots become coloured blocks.</p>
+  </section>
+
+  <section class="faq" id="faq" aria-labelledby="faq-h">
+    <h2 id="faq-h" class="sec-h">Questions.</h2>
+    <dl class="qa">
+      <div><dt>How can I see what my Claude Code subagents are doing?</dt><dd>Install netrunner-agents. Every subagent Claude Code starts then shows up in an Agents pane with the tool it's running right now, its token usage and a timer. Click <b>▸ activity</b> under an agent to see its last tool calls and, once it's done, its final report.</dd></div>
+      <div><dt>How do I see token usage per subagent in Claude Code?</dt><dd>Each agent's tile shows its tokens live: the size of its latest request (input, cache and output) as the API reported it. It's the same number Claude Code prints when an agent finishes, so they match.</dd></div>
+      <div><dt>How do I install it?</dt><dd>In the desktop app: <b>+</b> → <b>Plugins</b> → <b>Add marketplace</b> → <code>nocashflow/claude-netrunner-agents</code>, then add <b>netrunner-agents</b>. In a terminal session: <code>/plugin install netrunner-agents --marketplace nocashflow/claude-netrunner-agents</code>.</dd></div>
+      <div><dt>Does it slow Claude Code down?</dt><dd>It's built to be light. The mascots are still images, updates are batched so the pane redraws about 4 times a second at most (only while agents work), and the timer only ticks while an agent runs and the pane is open. With no agents running, it does nothing.</dd></div>
+      <div><dt>Is it safe? Does it send my code anywhere?</dt><dd>No network, file, process, model or tool access, and no dependencies. What it shows stays in the session's memory, secrets are masked before anything's stored, and it never changes or blocks what agents do. <code>claude plugin validate</code> lists every call it makes.</dd></div>
+      <div><dt>Does it work in the terminal or VS Code?</dt><dd>Yes, the pane and <code>/netrunner</code> work there, but those can't draw pictures in a pane, so each mascot shows as a coloured block.</dd></div>
+      <div><dt>Can I change how the agents look?</dt><dd>Yep. Any agent type can wear any of 8 mascots, 7 colours and 9 cosmetics, e.g. <code>/netrunner style Explore node acid visor</code>. Your picks are saved and work in every chat. Try combos <a href="#style">above</a>.</dd></div>
+      <div><dt>How is it different from the Background tasks panel?</dt><dd>They're independent and work fine together. Background tasks lists the tasks; this shows the same agents as a crew, with live tools, tokens, timers and activity.</dd></div>
+    </dl>
+  </section>
+
+  <section class="close" aria-labelledby="close-h">
+    <h2 id="close-h" class="close__h">Send your crew in.</h2>
+    <a class="pill" href="#install">Install netrunner-agents</a>
+    <p class="close__sub">Free and MIT licensed. Pairs well with my <a href="https://nocashflow.github.io/claude-cyberpunk-themes/">cyberpunk themes</a>. Stay preem, choom.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>© 2026 nocashflow · <a href="https://github.com/nocashflow/claude-netrunner-agents/blob/main/LICENSE">MIT License</a> · <a href="https://github.com/nocashflow/claude-netrunner-agents">GitHub</a> · <a href="https://github.com/nocashflow/claude-netrunner-agents/blob/main/SECURITY.md">Security</a></p>
+  <p>An unofficial fan project, not affiliated with Anthropic, CD PROJEKT RED or Studio Trigger.</p>
+</footer>
+</body>
+</html>

@@ -8,6 +8,8 @@
 
 I kept spinning up subagents and then just… staring at a spinner, wondering what they were up to. So I made them a little crew instead.
 
+**[Try the live demo →](https://nocashflow.github.io/claude-netrunner-agents/)**
+
 [![Version](https://img.shields.io/badge/version-1.0.0-ff2a6d?style=flat-square)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-00f0ff?style=flat-square)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-mod-d97757?style=flat-square)](https://code.claude.com/docs/en/plugins/mods/overview)
@@ -16,7 +18,7 @@ I kept spinning up subagents and then just… staring at a spinner, wondering wh
 [![Network](https://img.shields.io/badge/network%20calls-0-7cff4f?style=flat-square)](#security-and-privacy)
 [![Audit](https://github.com/nocashflow/claude-netrunner-agents/actions/workflows/audit.yml/badge.svg)](https://github.com/nocashflow/claude-netrunner-agents/actions/workflows/audit.yml)
 
-[Install](#install) · [The pane](#what-you-get) · [Meet the crew](#meet-the-crew) · [Make them yours](#make-them-yours) · [Usage](#usage) · [Performance](#light-on-your-machine) · [Security](#security-and-privacy) · [FAQ](#faq)
+[Website](https://nocashflow.github.io/claude-netrunner-agents/) · [Install](#install) · [The pane](#what-you-get) · [Meet the crew](#meet-the-crew) · [Make them yours](#make-them-yours) · [Usage](#usage) · [Performance](#light-on-your-machine) · [Security](#security-and-privacy) · [FAQ](#faq)
 
 </div>
 
@@ -207,6 +209,8 @@ scripts/
   audit.mjs                accessibility, safety and efficiency checks (runs on every push)
   build-assets.mjs         draws every picture in this README from the real mascot code
 assets/                    generated: the film, the crew, the pane, the looks
+docs/                      the website (GitHub Pages): index.html, site.css, site.js,
+                           plus generated mascots.js, pictures, icon and share card
 ```
 
 The mascots are plain `<rect>`s on a 64×48 grid. Every cosmetic is placed from each mascot's own eyes, head and body, so a visor or a mohawk fits all eight without any special cases.
@@ -227,7 +231,7 @@ npm run build:assets
 claude plugin test plugins/netrunner-agents
 ```
 
-`audit` checks contrast, every mascot combination (all 1,512 of them), the secret masking, what the code can reach, and the efficiency limits. `build:assets` redraws the film and pictures in this README from the real mascot code, so run it whenever you touch a mascot. If you want to add a mascot or a cosmetic, [CONTRIBUTING.md](CONTRIBUTING.md) walks through it.
+`audit` checks contrast, every mascot combination (all 1,512 of them), the secret masking, what the code can reach, and the efficiency limits. `build:assets` redraws the film and pictures in this README, and the website's mascot code and pictures, from the real mascot code, so run it whenever you touch a mascot. To preview the website, serve the repo folder (for example `python -m http.server`) and open `/docs/`. If you want to add a mascot or a cosmetic, [CONTRIBUTING.md](CONTRIBUTING.md) walks through it.
 
 Want to try your changes live? Clone the repo, open it in Claude Code and ask it to *"install this plugin from this folder instead of the GitHub version"*. Then `/reload-plugins` after each change.
 

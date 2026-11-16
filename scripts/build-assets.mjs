@@ -7,7 +7,8 @@
 //   .claude-plugin/icon.png    the plugin icon (512x512)
 //   node --import ./scripts/ts-ext.mjs scripts/build-assets.mjs
 
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { stripTypeScriptTypes } from 'node:module'
 import { deflateSync } from 'node:zlib'
 import { COLORS, COSMETICS, MASCOTS, ROLES, SIGNATURE, lookFor, mascotSvg } from '../plugins/netrunner-agents/hooks/mascots.ts'
 import { EDGE, SURFACE, TEXT } from '../plugins/netrunner-agents/hooks/palette.ts'
@@ -286,7 +287,8 @@ const CREW = [
     const y = 200 + Math.floor(i / 4) * 290
     body += crewCard(id, x, y, 332, 270)
   })
-  body += box(300, 800, 1000, 64, '#14141F', EDGE, 12)
+  // Wide enough for the whole command at 22px mono (~80 characters), with room to spare.
+  body += box(140, 800, 1320, 64, '#14141F', EDGE, 12)
   body += text(W / 2, 841, 22, TEXT.cyan, '/plugin install netrunner-agents --marketplace nocashflow/claude-netrunner-agents', { anchor: 'middle' })
   parts.push(`<g class="finale ${between(s, e + 0.01, 0.6)}">${body}</g>`)
 }
@@ -360,38 +362,63 @@ for (const id of Object.keys(MASCOTS)) {
   )
 }
 
-// ---------------------------------------------------------------- icon.png
-// Daemon in a visor, rasterised from the same rects and scaled to 512x512. Just Node and zlib.
-{
-  const SIZE = 512
-  const svg = mascotSvg({ mascot: 'daemon', color: 'magenta', cosmetic: 'visor' }, 'running')
-  const grid = Array.from({ length: 64 }, () => Array(64).fill([11, 11, 18]))
+// ---------------------------------------------------------------- PNGs (icon, share card)
+// A tiny pixel canvas: mascots are drawn from the same rects as the SVGs, text from a 5x7 pixel font.
+// Just Node and zlib, no image libraries.
+const hex = h => [0, 2, 4].map(i => parseInt(h.replace('#', '').slice(i, i + 2), 16))
+
+function canvas(w, h, bg) {
+  const px = new Uint8Array(w * h * 3)
+  const fill = (x, y, cw, ch, rgb) => {
+    for (let yy = Math.max(0, y); yy < Math.min(h, y + ch); yy += 1)
+      for (let xx = Math.max(0, x); xx < Math.min(w, x + cw); xx += 1) px.set(rgb, (yy * w + xx) * 3)
+  }
+  fill(0, 0, w, h, hex(bg))
+  return { w, h, px, fill }
+}
+
+function drawMascot(c, look, phase, ox, oy, scale) {
+  const svg = mascotSvg(look, phase)
   for (const [, x, y, w, h, fill] of svg.matchAll(/<rect x="(-?[\d.]+)" y="(-?[\d.]+)" width="([\d.]+)" height="([\d.]+)" fill="#([0-9A-Fa-f]{6})"\/>/g)) {
-    const rgb = [0, 2, 4].map(i => parseInt(fill.slice(i, i + 2), 16))
-    for (let yy = Math.max(0, +y); yy < Math.min(48, +y + +h); yy += 1)
-      for (let xx = Math.max(0, +x); xx < Math.min(64, +x + +w); xx += 1) grid[Math.floor(yy) + 8][Math.floor(xx)] = rgb
+    const x0 = Math.max(0, +x)
+    const y0 = Math.max(0, +y)
+    const x1 = Math.min(64, +x + +w)
+    const y1 = Math.min(48, +y + +h)
+    if (x1 > x0 && y1 > y0) c.fill(ox + Math.round(x0 * scale), oy + Math.round(y0 * scale), Math.round((x1 - x0) * scale), Math.round((y1 - y0) * scale), hex(fill))
   }
-  const raw = Buffer.alloc((SIZE * 4 + 1) * SIZE)
-  const cell = SIZE / 64
-  for (let y = 0; y < SIZE; y += 1) {
-    raw[y * (SIZE * 4 + 1)] = 0
-    for (let x = 0; x < SIZE; x += 1) {
-      const [r, g, b] = grid[Math.floor(y / cell)][Math.floor(x / cell)]
-      const at = y * (SIZE * 4 + 1) + 1 + x * 4
-      raw[at] = r
-      raw[at + 1] = g
-      raw[at + 2] = b
-      raw[at + 3] = 255
-    }
-  }
-  const table = Array.from({ length: 256 }, (_, k) => {
-    let c = k
-    for (let j = 0; j < 8; j += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
-    return c >>> 0
+}
+
+const GLYPHS = {
+  A: '.###.|#...#|#...#|#####|#...#|#...#|#...#', B: '####.|#...#|#...#|####.|#...#|#...#|####.',
+  C: '.####|#....|#....|#....|#....|#....|.####', E: '#####|#....|#....|####.|#....|#....|#####',
+  G: '.####|#....|#....|#..##|#...#|#...#|.###.', I: '#####|..#..|..#..|..#..|..#..|..#..|#####',
+  L: '#....|#....|#....|#....|#....|#....|#####', N: '#...#|##..#|#.#.#|#.#.#|#..##|#...#|#...#',
+  O: '.###.|#...#|#...#|#...#|#...#|#...#|.###.', P: '####.|#...#|#...#|####.|#....|#....|#....',
+  R: '####.|#...#|#...#|####.|#.#..|#..#.|#...#', S: '.####|#....|#....|.###.|....#|....#|####.',
+  T: '#####|..#..|..#..|..#..|..#..|..#..|..#..', U: '#...#|#...#|#...#|#...#|#...#|#...#|.###.',
+  W: '#...#|#...#|#...#|#.#.#|#.#.#|##.##|#...#', X: '#...#|#...#|.#.#.|..#..|.#.#.|#...#|#...#',
+  Y: '#...#|#...#|.#.#.|..#..|..#..|..#..|..#..', '-': '.....|.....|.....|#####|.....|.....|.....',
+  ',': '.....|.....|.....|.....|.....|..#..|.#...', ' ': '.....|.....|.....|.....|.....|.....|.....',
+}
+const textWidth = (str, scale) => str.length * 6 * scale - scale
+function drawText(c, str, ox, oy, scale, color) {
+  const rgb = hex(color)
+  ;[...str].forEach((ch, i) => {
+    GLYPHS[ch].split('|').forEach((row, y) => {
+      ;[...row].forEach((p, x) => p === '#' && c.fill(ox + (i * 6 + x) * scale, oy + y * scale, scale, scale, rgb))
+    })
   })
+}
+
+const CRC = Array.from({ length: 256 }, (_, k) => {
+  let c = k
+  for (let j = 0; j < 8; j += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+  return c >>> 0
+})
+function png({ w, h, px }) {
   const crc32 = buf => {
     let c = 0xffffffff
-    for (const byte of buf) c = table[(c ^ byte) & 0xff] ^ (c >>> 8)
+    for (const byte of buf) c = CRC[(c ^ byte) & 0xff] ^ (c >>> 8)
     return (c ^ 0xffffffff) >>> 0
   }
   const chunk = (type, data) => {
@@ -402,18 +429,54 @@ for (const id of Object.keys(MASCOTS)) {
     crc.writeUInt32BE(crc32(body))
     return Buffer.concat([len, body, crc])
   }
+  const raw = Buffer.alloc((w * 3 + 1) * h)
+  for (let y = 0; y < h; y += 1) {
+    raw[y * (w * 3 + 1)] = 0
+    raw.set(px.subarray(y * w * 3, (y + 1) * w * 3), y * (w * 3 + 1) + 1)
+  }
   const header = Buffer.alloc(13)
-  header.writeUInt32BE(SIZE, 0)
-  header.writeUInt32BE(SIZE, 4)
+  header.writeUInt32BE(w, 0)
+  header.writeUInt32BE(h, 4)
   header[8] = 8
-  header[9] = 6
-  const png = Buffer.concat([
+  header[9] = 2
+  return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', header),
     chunk('IDAT', deflateSync(raw, { level: 9 })),
     chunk('IEND', Buffer.alloc(0)),
   ])
-  writeFileSync(new URL('../plugins/netrunner-agents/.claude-plugin/icon.png', import.meta.url), png)
 }
 
-console.log(`launch.svg ${(film.length / 1024).toFixed(0)} KB, ${T}s loop · crew, pane, looks, ${Object.keys(MASCOTS).length} mascot cards, icon.png`)
+// The icon: Daemon in a visor, 64x64 scaled up to 512x512.
+const icon = canvas(512, 512, BG)
+drawMascot(icon, { mascot: 'daemon', color: 'magenta', cosmetic: 'visor' }, 'running', 0, 64, 8)
+const iconPng = png(icon)
+writeFileSync(new URL('../plugins/netrunner-agents/.claude-plugin/icon.png', import.meta.url), iconPng)
+
+// The share card (Open Graph / social previews): the name in pixel type over the whole crew.
+const share = canvas(1280, 640, BG)
+for (let y = 0; y < 640; y += 24) share.fill(0, y, 1280, 1, hex('#141420'))
+const title = 'NETRUNNER-AGENTS'
+drawText(share, title, (1280 - textWidth(title, 9)) / 2, 84, 9, '#FFFFFF')
+const line = 'YOUR SUBAGENTS, AS A PIXEL CREW'
+drawText(share, line, (1280 - textWidth(line, 4)) / 2, 182, 4, TEXT.dim)
+Object.keys(MASCOTS).forEach((id, i) => drawMascot(share, SIGNATURE[id], 'running', 40 + i * 152, 330, 2))
+share.fill(0, 616, 1280, 24, hex(TEXT.yellow))
+const sharePng = png(share)
+
+// ---------------------------------------------------------------- the website (docs/, served by GitHub Pages)
+const site = new URL('../docs/', import.meta.url)
+mkdirSync(new URL('mascots/', site), { recursive: true })
+writeFileSync(new URL('icon.png', site), iconPng)
+writeFileSync(new URL('share.png', site), sharePng)
+writeFileSync(new URL('launch.svg', site), film)
+for (const f of ['pane.svg', 'looks.svg']) writeFileSync(new URL(f, site), readFileSync(new URL(f, out)))
+for (const id of Object.keys(MASCOTS)) writeFileSync(new URL(`mascots/${id}.svg`, site), readFileSync(new URL(`mascots/${id}.svg`, out)))
+// The page draws mascots with the mod's own code: mascots.ts with its types stripped, nothing else changed.
+const source = readFileSync(new URL('../plugins/netrunner-agents/hooks/mascots.ts', import.meta.url), 'utf8')
+writeFileSync(
+  new URL('mascots.js', site),
+  `// Generated by scripts/build-assets.mjs from plugins/netrunner-agents/hooks/mascots.ts. Don't edit by hand.\n${stripTypeScriptTypes(source)}`,
+)
+
+console.log(`launch.svg ${(film.length / 1024).toFixed(0)} KB, ${T}s loop · crew, pane, looks, ${Object.keys(MASCOTS).length} mascot cards, icon.png, share.png, docs/`)

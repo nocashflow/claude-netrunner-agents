@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A website (GitHub Pages, in `docs/`): a live demo of the pane with pretend agents, the crew, a styler that builds your `/netrunner style` command, and an FAQ. No trackers, no external scripts, a strict Content Security Policy, and it pauses the demo when it's off screen or you prefer reduced motion.
+- A share card and search basics (structured data, sitemap, Open Graph).
+- Website checks in `scripts/audit.mjs`: the CSP, no inline or outside scripts, alt text, contrast, and that the page script never uses `innerHTML` or sends anything.
+
+### Fixed
+
+- The install command in the launch film's last scene was cut off. Its box is wider now.
+
 ## [1.0.0] - 2026-11-16
 
 ### Added

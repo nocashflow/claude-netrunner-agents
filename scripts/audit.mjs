@@ -137,6 +137,30 @@ for (const file of readdirSync(hooks)) {
   check(hit < 0, hit < 0 ? `${file} stays inside Claude Code's sandbox` : `${file}:${hit + 1} ${lines[hit].trim().slice(0, 80)}`)
 }
 
+// ---------------------------------------------------------------- the website (docs/)
+console.log('Website')
+const docs = new URL('../docs/', import.meta.url)
+const html = readFileSync(new URL('index.html', docs), 'utf8')
+const siteJs = readFileSync(new URL('site.js', docs), 'utf8')
+const css = readFileSync(new URL('site.css', docs), 'utf8')
+const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? ''
+check(/script-src 'self'/.test(csp) && !/unsafe-(inline|eval)/.test(csp) && /default-src 'none'/.test(csp), 'a strict Content Security Policy: own scripts only, nothing inline, nothing else by default')
+const scripts = [...html.matchAll(/<script([^>]*)>/g)].map(m => m[1])
+check(scripts.every(a => /type="application\/ld\+json"/.test(a) || /src="site\.js"/.test(a)), 'no inline JavaScript: only site.js and the structured-data block')
+check(!/\s(src|href)="(https?:)?\/\/(?!github\.com\/nocashflow|nocashflow\.github\.io)/.test(html.replace(/<a [^>]*>/g, '')), 'nothing loaded from another site (no CDNs, fonts, trackers or analytics)')
+const imgs = [...html.matchAll(/<img\b[^>]*>/g)].map(m => m[0])
+check(imgs.every(i => /\salt="/.test(i)), `all ${imgs.length} images have alt text`)
+const siteCode = siteJs.split('\n').filter(line => !line.trim().startsWith('//')).join('\n')
+check(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function|fetch\(|XMLHttpRequest|localStorage|cookie/.test(siteCode), 'site.js writes text with textContent only, sends nothing, stores nothing')
+check(/prefers-reduced-motion/.test(siteJs) && /prefers-reduced-motion: reduce/.test(css), 'the demo and page respect reduced motion')
+check(/visibilitychange/.test(siteJs) && /IntersectionObserver/.test(siteJs), 'the demo pauses when off screen or the tab is hidden')
+const token = name => css.match(new RegExp(`--${name}: (#[0-9a-f]{6})`))?.[1]
+for (const [fg, bg] of [['ink', 'page'], ['ink-2', 'page'], ['ink-3', 'page'], ['ink-2', 'plate'], ['ink-3', 'plate'], ['ink-3', 'tile'], ['red-text', 'tile'], ['cyan', 'plate'], ['yellow', 'page']]) {
+  const r = ratio(token(fg), token(bg))
+  check(r >= 4.5, `site text ${fg} on ${bg}: ${r.toFixed(1)}:1`)
+}
+check(/"@type": "FAQPage"/.test(html) && /<link rel="canonical"/.test(html) && /og:image/.test(html), 'search and share basics: canonical URL, Open Graph image, FAQ structured data')
+
 console.log('Efficiency')
 const register = readFileSync(new URL('register.tsx', hooks), 'utf8')
 const constant = name => Number(register.match(new RegExp(`const ${name} = (\\d+)`))?.[1])

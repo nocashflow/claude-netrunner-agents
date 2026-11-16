@@ -26,10 +26,10 @@ jobs:
       - name: Contrast, mascot SVG safety, secret masking, code reach and efficiency
         run: npm run audit
 
-      - name: README assets are up to date
+      - name: README and website assets are up to date
         run: |
           npm run build:assets
-          git diff --exit-code -- assets plugins/netrunner-agents/.claude-plugin/icon.png || (echo "assets/ is out of date: run npm run build:assets and commit the result." && exit 1)
+          git diff --exit-code -- assets docs plugins/netrunner-agents/.claude-plugin/icon.png || (echo "assets/ or docs/ is out of date: run npm run build:assets and commit the result." && exit 1)
 
       - name: Manifests are valid JSON
         run: |
