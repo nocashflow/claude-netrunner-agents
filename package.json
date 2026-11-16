@@ -1,0 +1,14 @@
+{
+  "name": "claude-netrunner-agents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dev scripts for the netrunner-agents Claude Code mod. The mod itself has zero dependencies.",
+  "type": "module",
+  "engines": { "node": ">=23.6" },
+  "scripts": {
+    "audit": "node --import ./scripts/ts-ext.mjs scripts/audit.mjs",
+    "build:assets": "node --import ./scripts/ts-ext.mjs scripts/build-assets.mjs",
+    "test": "claude plugin test plugins/netrunner-agents"
+  },
+  "license": "MIT"
+}

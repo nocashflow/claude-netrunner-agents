@@ -1,0 +1,36 @@
+name: Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Read-only: this workflow never writes to the repo or uses any secrets.
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Accessibility, safety, efficiency and assets
+    runs-on: ubuntu-latest
+    steps:
+      # Actions are pinned to exact commits, not tags, so a moved tag can't change what runs here.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Contrast, mascot SVG safety, secret masking, code reach and efficiency
+        run: npm run audit
+
+      - name: README assets are up to date
+        run: |
+          npm run build:assets
+          git diff --exit-code -- assets plugins/netrunner-agents/.claude-plugin/icon.png || (echo "assets/ is out of date: run npm run build:assets and commit the result." && exit 1)
+
+      - name: Manifests are valid JSON
+        run: |
+          node -e "for (const f of ['.claude-plugin/marketplace.json', 'plugins/netrunner-agents/.claude-plugin/plugin.json', 'plugins/netrunner-agents/hooks/hooks.json']) JSON.parse(require('fs').readFileSync(f, 'utf8'))"

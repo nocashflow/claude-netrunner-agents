@@ -1,0 +1,12 @@
+{
+  "name": "claude-netrunner-agents",
+  "owner": { "name": "nocashflow" },
+  "metadata": { "description": "Your Claude Code subagents as tiny pixel mascots, in a small cyberpunk pane." },
+  "plugins": [
+    {
+      "name": "netrunner-agents",
+      "source": "./plugins/netrunner-agents",
+      "description": "A compact pane that shows every subagent Claude Code starts as a pixel mascot: what it's doing, for how long, and its exact tokens."
+    }
+  ]
+}
